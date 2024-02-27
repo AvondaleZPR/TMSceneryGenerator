@@ -1,0 +1,9 @@
+[meta]
+name = "SceneryGenerator"
+author = "AvondaleZPR"
+category = "Map Editor"
+
+version = "Alpha 0.1"
+
+[script]
+timeout = 30000
