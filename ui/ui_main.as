@@ -6,12 +6,14 @@ namespace SGUI
 		UI::SetNextWindowPos(300, 300, UI::Cond::Once);
 		UI::SetNextWindowContentSize(700, 530);
 		
+		UI::PushStyleColor(UI::Col::Border, vec4(0.9f, 0.9f, 0.9f, 1));
 		UI::Begin("Scenery Generator", bDisplayUI, UI::WindowFlags::NoResize + UI::WindowFlags::NoScrollbar);	
 			SGUI::Tabs();
 
 			UI::Separator();
 			UI::Text("\\$fff\\$sScenery Generator \\$999\\$s" + Main::GetPluginVersion() + " \\$fff\\$sby AvondaleZPR\\$999\\$s" + Icons::Copyright);			
 		UI::End();
+		UI::PopStyleColor(1);
 	}
 
 	void Tabs()
@@ -76,46 +78,56 @@ namespace SGUI
 		if (UI::Button(Icons::Trash + " Undo Scenery")) {
 			startnew(SG::Undo);
 		}
-
 		UI::Separator();
+
+		UI::Text("\\$ff0\\$s" + Icons::ExclamationCircle +" Save your track before generating scenery!");
+		UI::Text("\\$fff\\$s" + "Undo only works for 1 iteration!");
+		UI::Text("\\$fff\\$s" + "Generation works better on floating tracks");
 	}
 
 	void SettingsTab()
 	{
-		bSeedEnabled = UI::Checkbox("Scenery Seed", bSeedEnabled); UI::SameLine();
-		bool bChanged = false;
-		UI::Text("\\$080\\$s" + Icons::Key + " Seed:"); UI::SameLine();
-		sSeedText = UI::InputText("##sSeedText", sSeedText, bChanged, UI::InputTextFlags::CharsUppercase); UI::SameLine();
-		if (UI::Button(Icons::Random)) 
-		{
-			sSeedText = RandomTextSeed(Math::Rand(1,10));
-		}
-		sSeedText = sSeedText.SubStr(0, 10);
-		if (bChanged && bSeedEnabled) 
-		{
-			if(sSeedText.Length <= 0)
-			{
-				bSeedEnabled = false;
-			}
-		}
+		SeedSettings();
+	}
 
-		bSeedEnabledBS = UI::Checkbox("Block Set Seed", bSeedEnabledBS); UI::SameLine();
-		bool bChangedBS = false;
-		UI::Text("\\$080\\$s" + Icons::Key + " Seed:"); UI::SameLine();
-		sSeedTextBS = UI::InputText("##sSeedTextBS", sSeedTextBS, bChangedBS, UI::InputTextFlags::CharsUppercase); UI::SameLine();
-		if (UI::Button("\\$s" + Icons::Random)) // i added $s because if the buttons name is the same as the other one it doesnt work xdd
-		{
-			sSeedTextBS = RandomTextSeed(Math::Rand(1,10));
-		}
-		sSeedTextBS = sSeedTextBS.SubStr(0, 10);
-		if (bChangedBS && bSeedEnabledBS) 
-		{
-			if(sSeedTextBS.Length <= 0)
+	void SeedSettings()
+	{
+		UI::Markdown("**Seeds**");
+		UI::BeginChild("Seeds", vec2(685,75), true);
+			bSeedEnabled = UI::Checkbox("Scenery", bSeedEnabled); UI::SameLine();
+			bool bChanged = false;
+			UI::Text("\\$080\\$s" + Icons::Key + " Seed:"); UI::SameLine();
+			sSeedText = UI::InputText("##sSeedText", sSeedText, bChanged, UI::InputTextFlags::CharsUppercase); UI::SameLine();
+			if (UI::Button(Icons::Random)) 
 			{
-				bSeedEnabledBS = false;
+				sSeedText = RandomTextSeed(Math::Rand(1,10));
 			}
-		}
-		UI::Separator();		
+			sSeedText = sSeedText.SubStr(0, 10);
+			if (bChanged && bSeedEnabled) 
+			{
+				if(sSeedText.Length <= 0)
+				{
+					bSeedEnabled = false;
+				}
+			}
+
+			bSeedEnabledBS = UI::Checkbox("BlockSet", bSeedEnabledBS); UI::SameLine();
+			bool bChangedBS = false;
+			UI::Text("\\$080\\$s" + Icons::Key + " Seed:"); UI::SameLine();
+			sSeedTextBS = UI::InputText("##sSeedTextBS", sSeedTextBS, bChangedBS, UI::InputTextFlags::CharsUppercase); UI::SameLine();
+			if (UI::Button("\\$s" + Icons::Random)) // i added $s because if the buttons name is the same as the other one it doesnt work xdd
+			{
+				sSeedTextBS = RandomTextSeed(Math::Rand(1,10));
+			}
+			sSeedTextBS = sSeedTextBS.SubStr(0, 10);
+			if (bChangedBS && bSeedEnabledBS) 
+			{
+				if(sSeedTextBS.Length <= 0)
+				{
+					bSeedEnabledBS = false;
+				}
+			}
+		UI::EndChild();			
 	}
 
 	void BlockTab()
@@ -129,6 +141,7 @@ namespace SGUI
 			for(int i = 0; i < SGBlockList::tBlocks.Length; i++)
 			{
 				UI::TableNextColumn();
+				SGBlockList::tBlocks[i].bEnabled = UI::Checkbox("##Block_" + tostring(i), SGBlockList::tBlocks[i].bEnabled); UI::SameLine();
 				UI::Text(SGBlockList::tBlocks[i].sBlockName);
 				UI::TableNextColumn();
 				UI::Text(SGBlockList::tBlocks[i].tTags[0]);

@@ -5,7 +5,7 @@ namespace SGBlockList
 	class SGBlockData
 	{
 		string sBlockName;
-		bool bEnabled;
+		bool bEnabled = false;
 		array<string> tTags;
 
 		SGBlockData() {}
@@ -25,7 +25,14 @@ namespace SGBlockList
 
 	SGBlockData GetRandomBlock(array<SGBlockData@> tBDArray)
 	{
-		return tBDArray[SGRandom::Int(0, tBDArray.Length)];
+		SGBlockData bdBlock;
+
+		while(bdBlock.bEnabled == false)
+		{
+			bdBlock = tBDArray[SGRandom::Int(0, tBDArray.Length)];
+		}
+
+		return bdBlock;
 	}
 
 	string GetRandomBlockName()

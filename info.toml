@@ -3,7 +3,7 @@ name = "SceneryGenerator"
 author = "AvondaleZPR"
 category = "Map Editor"
 
-version = "Alpha 0.1"
+version = "Alpha 0.2"
 
 [script]
 timeout = 30000

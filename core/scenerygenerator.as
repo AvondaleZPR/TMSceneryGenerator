@@ -14,6 +14,7 @@ namespace SG
 		{
 			SGBlocks::ClearBlockedSpots();
 			auto tMapBlocks = GetApp().RootMap.Blocks;
+			cMap.NextMapElemColor = CGameEditorPluginMap::EMapElemColor::Default;
 
 			iBlockCountBefore = tMapBlocks.Length;
 			uint64 iTimeBefore = Time::get_Now();
@@ -143,6 +144,8 @@ namespace SG
 
 	void GenerateSceneryNearBlock(CGameCtnBlock@ cBlock)
 	{
+		cMap.NextMapElemColor = Convert(cBlock.MapElemColor);
+
 		switch(SGRandom::Int(1,5))
 		{
 			case 1:
@@ -165,7 +168,7 @@ namespace SG
 		sgprint("generating scenery tower");
 
 		CGameEditorPluginMap::ECardinalDirections cDir = SGRandom::Direction();
-		int3 i3Point = int3(cBlock.CoordX, cBlock.CoordY, cBlock.CoordZ).opAdd(SGDirection::Move(cDir, SGRandom::Int(1,6)));
+		int3 i3Point = int3(cBlock.CoordX, cBlock.CoordY, cBlock.CoordZ).opAdd(SGDirection::Move(cDir, SGRandom::Int(1,4)));
 
 		int iTowerHeight = cBlock.CoordY + SGRandom::Int(-2,6);
 		if (iTowerHeight <= iMapMinY)	{iTowerHeight = iMapMinY*2;}
@@ -252,6 +255,8 @@ namespace SG
 
 	void GenerateArchOnBlock(CGameCtnBlock@ cBlock)
 	{
+		sgprint("generating arch");
+
 		if(cBlock.CoordY < iMapMaxY-4)
 		{
 			CGameEditorPluginMap::ECardinalDirections cDir = SGDirection::Convert(cBlock.BlockDir);
