@@ -87,7 +87,25 @@ namespace SGUI
 
 	void SettingsTab()
 	{
+		SettingsMain();
+		SettingsGeneration();
 		SeedSettings();
+	}
+
+	void SettingsMain()
+	{
+		UI::Markdown("**General**");
+		UI::BeginChild("General", vec2(685,40), true);
+		bDebugMode = UI::Checkbox("Enable debug logging", bDebugMode);
+		UI::EndChild();
+	}
+
+	void SettingsGeneration()
+	{
+		UI::Markdown("**Generation**");
+		UI::BeginChild("Generation", vec2(685,40), true);
+		SG::bGenerateArches = UI::Checkbox("Generate Arches", SG::bGenerateArches);
+		UI::EndChild();	
 	}
 
 	void SeedSettings()
@@ -134,8 +152,8 @@ namespace SGUI
 	{
 		if (UI::BeginTable("BlocksTable", 2))
 		{
-			UI::TableSetupColumn("Block Name", UI::TableColumnFlags::None);	
-			UI::TableSetupColumn("Purpose", UI::TableColumnFlags::None);
+			UI::TableSetupColumn("Name", UI::TableColumnFlags::None);	
+			UI::TableSetupColumn("Tags", UI::TableColumnFlags::None);
 			UI::TableHeadersRow();
 
 			for(int i = 0; i < SGBlockList::tBlocks.Length; i++)
@@ -144,7 +162,7 @@ namespace SGUI
 				SGBlockList::tBlocks[i].bEnabled = UI::Checkbox("##Block_" + tostring(i), SGBlockList::tBlocks[i].bEnabled); UI::SameLine();
 				UI::Text(SGBlockList::tBlocks[i].sBlockName);
 				UI::TableNextColumn();
-				UI::Text(SGBlockList::tBlocks[i].tTags[0]);
+				UI::Text(SGBlockList::tBlocks[i].TagsToString());
 			}
 
 			UI::EndTable();

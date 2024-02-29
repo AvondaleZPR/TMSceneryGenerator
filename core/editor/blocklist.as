@@ -16,6 +16,16 @@ namespace SGBlockList
 			this.bEnabled = bEnabled;
 			this.tTags = tTags;
 		}
+
+		string TagsToString()
+		{
+			string sTags = "";
+			for(int i = 0; i < tTags.Length; i++)
+			{
+				sTags = sTags + tTags[i] + ", ";
+			}
+			return sTags;
+		}
 	}
 
 	void RegisterNewBlock(const string sBlockName, bool bEnabled, array<string> tTags)
@@ -40,7 +50,7 @@ namespace SGBlockList
 		return GetRandomBlock(tBlocks).sBlockName;
 	}	
 
-	SGBlockData FindBlockInArrayWithTagList(array<string> tTags, array<SGBlockData@> tBDArray)	
+	SGBlockData FindBlockInArrayWithTagList(array<string> tTags, array<SGBlockData@> tBDArray, array<string> tAntiTags = {""})	
 	{
 		int iLoopCounter = 0;
 		SGBlockData bdBlock;
@@ -64,30 +74,46 @@ namespace SGBlockList
 					}
 				}
 			}
+
+			if(tAntiTags[0] != "")
+			{
+				for(int i = 0; i < tAntiTags.Length; i++)
+				{
+					for(int j = 0; j < bdBlock.tTags.Length; j++)
+					{
+						if(tAntiTags[i] == bdBlock.tTags[j])
+						{
+							iTagsMatched = -999;
+							break;
+						}
+					}
+				}
+			}
+
 			bTagsMatch = iTagsMatched >= tTags.Length;
 		} while(bTagsMatch == false);
 
 		return bdBlock;
 	}
 
-	SGBlockData GetRandomBlockWithTags(array<string> tTags)
+	SGBlockData GetRandomBlockWithTags(array<string> tTags, array<string> tAntiTags = {""})
 	{
-		return FindBlockInArrayWithTagList(tTags, tBlocks);
+		return FindBlockInArrayWithTagList(tTags, tBlocks, tAntiTags);
 	}	
 
-	SGBlockData GetRandomBlockWithTag(const string sTag)
+	SGBlockData GetRandomBlockWithTag(const string sTag, array<string> tAntiTags = {""})
 	{
-		return GetRandomBlockWithTags({sTag});
+		return GetRandomBlockWithTags({sTag}, tAntiTags);
 	}	
 
-	string GetRandomBlockNameWithTags(array<string> tTags)
+	string GetRandomBlockNameWithTags(array<string> tTags, array<string> tAntiTags = {""})
 	{
-		return FindBlockInArrayWithTagList(tTags, tBlocks).sBlockName;
+		return FindBlockInArrayWithTagList(tTags, tBlocks, tAntiTags).sBlockName;
 	}
 
-	string GetRandomBlockNameWithTag(const string sTag)
+	string GetRandomBlockNameWithTag(const string sTag, array<string> tAntiTags = {""})
 	{
-		return GetRandomBlockNameWithTags({sTag});
+		return GetRandomBlockNameWithTags({sTag}, tAntiTags);
 	}
 }
 
@@ -114,12 +140,25 @@ namespace SGBlockSet
 	{
 		return GetRandomBlockNameWithTags({sTag});
 	}	
+
+	string BlockSetToString()
+	{
+		string sBlockSet = "";
+
+		for (int i = 0; i< tBlockSet.Length; i++)
+		{
+			sBlockSet = sBlockSet + tBlockSet[i].sBlockName + ", ";
+		}
+
+		return sBlockSet;
+	}
 }
 
 // if specific block's direction works differently for the rest of the blocks - add statements to this
 CGameEditorPluginMap::ECardinalDirections SpecialBlockDirection(const string sBlockName, CGameEditorPluginMap::ECardinalDirections cDir) 
 {
-	if (sBlockName == "TrackWallArch1x1SideTop" || sBlockName == "DecoCliffIceTopStraight10m" || sBlockName == "StageStraight")
+	if 	(sBlockName == "TrackWallArch1x1SideTop" || sBlockName.Contains("DecoCliff") || sBlockName == "StageStraight" || sBlockName.Contains("Diag")
+		)
 	{
 		cDir = SGDirection::TurnRight(cDir);
 	}
@@ -141,6 +180,7 @@ Block tags:
  		Decoration
  		Lighting
  		Arch
+ 		SideStructure
  	Surface:
  		Wood
  		Grass
@@ -152,6 +192,7 @@ Block tags:
 		Sand
 		Snow
 		Water
+		Stone
 	Curve:
 		Straight
 		Curve
@@ -181,6 +222,8 @@ Block tags:
 		EffectBlock
 		Ring
 		Screen
+		Pipe
+		Triangle
 */
 void InitBlockList()
 {
@@ -219,7 +262,8 @@ void InitBlockList()
 
 	SGBlockList::RegisterNewBlock("DecoWallBase", true, {"Structure", "Wood", "Straight", "Flat", "NoTilt", "1x1"});
 	SGBlockList::RegisterNewBlock("DecoWallCurve1", true, {"Structure", "Wood", "Curve", "Flat", "NoTilt", "1x1"});
-	SGBlockList::RegisterNewBlock("DecoWallSlope2Straight", true, {"Decoration", "Wood", "Straight", "Curve", "NoTilt", "1x1"});
+	SGBlockList::RegisterNewBlock("DecoWallSlope2Straight", true, {"Decoration", "Wood", "Straight", "Slope", "NoTilt", "1x1"});
+	SGBlockList::RegisterNewBlock("DecoWallLoopStart", true, {"Decoration", "Wood", "Straight", "Slope", "NoTilt", "1x1"});
 
 	SGBlockList::RegisterNewBlock("TrackWallStraight", true, {"Structure", "Wood", "Straight", "Flat", "NoTilt", "1x1"});
 	SGBlockList::RegisterNewBlock("TrackWallBranchCross", true, {"Structure", "Wood", "Straight", "Flat", "NoTilt", "1x1"});
@@ -239,13 +283,14 @@ void InitBlockList()
 	SGBlockList::RegisterNewBlock("PlatformIceWallStraight", true, {"Decoration", "Ice", "Straight", "Flat", "NoTilt", "Small4x1"});
 	SGBlockList::RegisterNewBlock("PlatformDirtWallStraight", true, {"Decoration", "Dirt", "Straight", "Flat", "NoTilt", "Small4x1"});
 	SGBlockList::RegisterNewBlock("PlatformGrassWallStraight", true, {"Decoration", "Grass", "Straight", "Flat", "NoTilt", "Small4x1"});
+	SGBlockList::RegisterNewBlock("PlatformPlasticWallStraight", true, {"Decoration", "Plastic", "Straight", "Flat", "NoTilt", "Small4x1"});
 	//--
 
 	//SQUARE PIPE THINGS
-	SGBlockList::RegisterNewBlock("StructureBase", true, {"Structure", "Straight", "Flat", "NoTilt", "1x1"});
-	SGBlockList::RegisterNewBlock("StructureCorner", true, {"Structure", "Curve", "Flat", "NoTilt", "1x1"});
-	SGBlockList::RegisterNewBlock("StructureCross", true, {"Structure", "Straight", "Flat", "NoTilt", "1x1"});
-	SGBlockList::RegisterNewBlock("StructureDeadend", true, {"Structure", "Straight", "Flat", "NoTilt", "1x1"});
+	SGBlockList::RegisterNewBlock("StructureBase", true, {"Structure", "Straight", "Flat", "NoTilt", "1x1", "Pipe"});
+	SGBlockList::RegisterNewBlock("StructureCorner", true, {"Structure", "Curve", "Flat", "NoTilt", "1x1", "Pipe"});
+	SGBlockList::RegisterNewBlock("StructureCross", true, {"Structure", "Straight", "Flat", "NoTilt", "1x1", "Pipe"});
+	SGBlockList::RegisterNewBlock("StructureDeadend", true, {"Structure", "Straight", "Flat", "NoTilt", "1x1", "Pipe"});
 	//--
 
 	//WATER 
@@ -279,14 +324,16 @@ void InitBlockList()
 	SGBlockList::RegisterNewBlock("RoadTechSpecialNoEngineSlope", true, {"Decoration", "Tech", "Straight", "Slope", "NoTilt", "1x1", "NoEngine", "EffectBlock"});	
 	SGBlockList::RegisterNewBlock("RoadTechSpecialFragileSlope", true, {"Decoration", "Tech", "Straight", "Slope", "NoTilt", "1x1", "Fragile", "EffectBlock"});	
 	SGBlockList::RegisterNewBlock("RoadTechSpecialSlowMotionSlope", true, {"Decoration", "Tech", "Straight", "Slope", "NoTilt", "1x1", "SlowMotion", "EffectBlock"});	
-	SGBlockList::RegisterNewBlock("RoadTechSpecialTurboSlope", true, {"Decoration", "Tech", "Straight", "Slope", "NoTilt", "1x1", "Turbo", "EffectBlock"});	
+	SGBlockList::RegisterNewBlock("RoadTechSpecialTurboSlopeUp", true, {"Decoration", "Tech", "Straight", "Slope", "NoTilt", "1x1", "Turbo", "EffectBlock"});	
+	SGBlockList::RegisterNewBlock("RoadTechSpecialTurboSlopeDown", true, {"Decoration", "Tech", "Straight", "Slope", "NoTilt", "1x1", "Turbo", "EffectBlock"});	
 
 	SGBlockList::RegisterNewBlock("RoadTechSpecialResetTilt", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "Reset", "EffectBlock"});
 	SGBlockList::RegisterNewBlock("RoadTechSpecialNoSteeringTilt", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "NoSteering", "EffectBlock"});
 	SGBlockList::RegisterNewBlock("RoadTechSpecialNoEngineTilt", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "NoEngine", "EffectBlock"});	
 	SGBlockList::RegisterNewBlock("RoadTechSpecialFragileTilt", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "Fragile", "EffectBlock"});	
 	SGBlockList::RegisterNewBlock("RoadTechSpecialSlowMotionTilt", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "SlowMotion", "EffectBlock"});	
-	SGBlockList::RegisterNewBlock("RoadTechSpecialTurboTilt", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "Turbo", "EffectBlock"});	
+	SGBlockList::RegisterNewBlock("RoadTechSpecialTurboTiltLeft", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "Turbo", "EffectBlock"});	
+	SGBlockList::RegisterNewBlock("RoadTechSpecialTurboTiltRight", true, {"Decoration", "Tech", "Straight", "Flat", "Tilt", "1x1", "Turbo", "EffectBlock"});	
 	//--
 
 	//ARCHES
@@ -302,6 +349,49 @@ void InitBlockList()
 
 	//idk how to categorise these so go fuck yourself
 	SGBlockList::RegisterNewBlock("StageStraight", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "Small4x1"}); // rotation is wrong
-	SGBlockList::RegisterNewBlock("DecoCliffIceTopStraight10m", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "Small4x1"}); // rotation is wrong
+	SGBlockList::RegisterNewBlock("StageCornerIn", true, {"Decoration", "Tech", "Curve", "Flat", "NoTilt", "Small4x1"});
+	SGBlockList::RegisterNewBlock("StageDiagIn", true, {"Decoration", "Tech", "Curve", "Flat", "NoTilt", "Small4x1"});
+
+	SGBlockList::RegisterNewBlock("StandStraight", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "1x1"});
+	SGBlockList::RegisterNewBlock("StandStraightOnDecoWall", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "1x1"});
+	SGBlockList::RegisterNewBlock("StandCornerInOnDecoWall", true, {"Decoration", "Tech", "Curve", "Flat", "NoTilt", "1x1"});
+
+	SGBlockList::RegisterNewBlock("DecoCliffIceTopStraight10m", true, {"Decoration", "Snow", "Straight", "Flat", "NoTilt", "Small4x1"}); // rotation is wrong
+	SGBlockList::RegisterNewBlock("DecoCliffTopStraight10m", true, {"Decoration", "PenaltyGrass", "Straight", "Flat", "NoTilt", "Small4x1"}); // rotation is wrong
+	//--
+
+	//RALLY SHIT
+	//SGBlockList::RegisterNewBlock("RallyCastleWallBranchCrossPillar", true, {"Structure", "Stone", "Straight", "Flat", "NoTilt", "1x1"});
+	SGBlockList::RegisterNewBlock("RallyRoadDirtHighCurve1", true, {"Decoration", "Dirt", "Curve", "Flat", "NoTilt", "1x1"});
+	//--
+
+	//TRIANGLES vertical -- DIRECTION FUCKED
+	SGBlockList::RegisterNewBlock("PlatformDirtDiag1Wall4UpRight", true, {"Decoration", "Dirt", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformDirtDiag1Wall4UpLeft", true, {"Decoration", "Dirt", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformDirtDiag1Wall4DownRight", true, {"Decoration", "Dirt", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformDirtDiag1Wall4DownLeft", true, {"Decoration", "Dirt", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+
+	SGBlockList::RegisterNewBlock("PlatformTechDiag1Wall4UpRight", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformTechDiag1Wall4UpLeft", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformTechDiag1Wall4DownRight", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformTechDiag1Wall4DownLeft", true, {"Decoration", "Tech", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});	
+
+	SGBlockList::RegisterNewBlock("PlatformPlasticDiag1Wall4UpRight", true, {"Decoration", "Plastic", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformPlasticDiag1Wall4UpLeft", true, {"Decoration", "Plastic", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformPlasticDiag1Wall4DownRight", true, {"Decoration", "Plastic", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformPlasticDiag1Wall4DownLeft", true, {"Decoration", "Plastic", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});	
+
+	SGBlockList::RegisterNewBlock("PlatformIceDiag1Wall4UpRight", true, {"Decoration", "Ice", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformIceDiag1Wall4UpLeft", true, {"Decoration", "Ice", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformIceDiag1Wall4DownRight", true, {"Decoration", "Ice", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});
+	SGBlockList::RegisterNewBlock("PlatformIceDiag1Wall4DownLeft", true, {"Decoration", "Ice", "Straight", "Flat", "NoTilt", "Small4x1", "Triangle"});		
+	//--
+
+	//SIDE STRUCTURE
+	//SGBlockList::RegisterNewBlock("TrackWallArch1x1SideTop", true, {"SideStructure", "Wood", "Straight", "Flat", "NoTilt", "Small4x1"});
+	//SGBlockList::RegisterNewBlock("TrackWallArchSlopeStraight", true, {"SideStructure", "Wood", "Straight", "Flat", "NoTilt", "Small4x1"});
+	//SGBlockList::RegisterNewBlock("DecoWallArchSlopeBase", true, {"SideStructure", "Wood", "Straight", "Flat", "NoTilt", "Small4x1"});
+	//SGBlockList::RegisterNewBlock("DecoWallArchSlope2End", true, {"SideStructure", "Wood", "Straight", "Flat", "NoTilt", "Small4x1"});
+	//SGBlockList::RegisterNewBlock("DecoWallLoopEnd1x1Side", true, {"SideStructure", "Wood", "Straight", "Flat", "NoTilt", "Small4x1"});
 	//--
 }

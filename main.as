@@ -1,4 +1,4 @@
-bool bDebugMode = true;
+bool bDebugMode = false;
 bool bDisplayUI = false;
 
 void sgprint(const string sText)

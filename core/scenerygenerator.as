@@ -7,6 +7,7 @@ namespace SG
 	int iMapMaxY = 39;
 	int iBlockCountBefore = 0;
 	int iBlockCountAfter = 0;
+	bool bGenerateArches = true;
 
 	void Begin()
 	{
@@ -108,6 +109,7 @@ namespace SG
 			string sTrackBlockName = tBlocks[iBlockId].BlockModel.IdName;
 			if (sTrackBlockName != "Grass" && !sTrackBlockName.Contains("TrackWall"))
 			{		
+				//SGBlocks::tBlockedSpots.InsertLast(int3(tBlocks[iBlockId].CoordX, tBlocks[iBlockId].CoordY, tBlocks[iBlockId].CoordZ));
 				sgprint("Generating scenery near "+sTrackBlockName+" block #"+iBlockId+" at "+tBlocks[iBlockId].CoordX+","+tBlocks[iBlockId].CoordY+ ","+tBlocks[iBlockId].CoordZ);
 				GenerateSceneryNearBlock(tBlocks[iBlockId]);
 			}
@@ -146,21 +148,48 @@ namespace SG
 	{
 		cMap.NextMapElemColor = Convert(cBlock.MapElemColor);
 
-		switch(SGRandom::Int(1,5))
+		switch(SGRandom::Int(1,6))
 		{
 			case 1:
-				// do nothing
-				break;
 			case 2:
+				if(!cBlock.IsGround)
+				{
+					GenerateStructureUnderBlock(cBlock);
+					break;
+				}
+			case 3:
 				GenerateTowerNearBlock(cBlock);
 				break;
-			case 3:
-				GenerateStructureUnderBlock(cBlock);
-				break;
 			case 4:
-				GenerateArchOnBlock(cBlock);
+				if (bGenerateArches)
+				{
+					GenerateArchOnBlock(cBlock);
+					break;
+				}
+			case 5:
+				GenerateOtherStructures(cBlock);
 				break;
 		}
+	}
+
+	void GenerateOtherStructures(CGameCtnBlock@ cBlock)
+	{
+		switch(SGRandom::Int(1,4))
+		{
+			case 1:
+				break;
+			case 2:
+				GenerateCurveTowerNearBlock(cBlock);
+				break;
+		}
+	}
+
+	int RandomTowerHeight(int iBlockHeight)
+	{
+		int iTowerHeight = iBlockHeight + SGRandom::Int(-2,10);
+		if (iTowerHeight <= iMapMinY)	{iTowerHeight = iMapMinY*2;}
+		if (iTowerHeight >= iMapMaxY)	{iTowerHeight = iMapMaxY-2;}
+		return iTowerHeight;	
 	}
 
 	void GenerateTowerNearBlock(CGameCtnBlock@ cBlock)
@@ -170,9 +199,7 @@ namespace SG
 		CGameEditorPluginMap::ECardinalDirections cDir = SGRandom::Direction();
 		int3 i3Point = int3(cBlock.CoordX, cBlock.CoordY, cBlock.CoordZ).opAdd(SGDirection::Move(cDir, SGRandom::Int(1,4)));
 
-		int iTowerHeight = cBlock.CoordY + SGRandom::Int(-2,6);
-		if (iTowerHeight <= iMapMinY)	{iTowerHeight = iMapMinY*2;}
-		if (iTowerHeight >= iMapMaxY)	{iTowerHeight = iMapMaxY-2;} 
+		int iTowerHeight = RandomTowerHeight(cBlock.CoordY); 
 
 		if (!CanBuildStructureTower(i3Point, iMapMaxY))
 		{
@@ -225,11 +252,12 @@ namespace SG
 			}
 			else
 			{
-			 	sSceneryBlockName = SGBlockSet::GetRandomBlockNameWithTag("Structure");
+			 	sSceneryBlockName = SGBlockSet::GetRandomBlockNameWithTags({"Structure","Straight"});
 			}
 
-			if(PlaceBlock(sSceneryBlockName, cDir, int3(i3Point.x, iHeight, i3Point.z)) && iHeight < iMaxHeight && !sSceneryBlockName.Contains("Structure"))
-			// square pipe things have Structure in their names
+			//adding side decoration
+			if(PlaceBlock(sSceneryBlockName, cDir, int3(i3Point.x, iHeight, i3Point.z)) && iHeight < iMaxHeight-1 && !sSceneryBlockName.Contains("Structure"))
+			// square pipe things have Structure in their names, and we dont want blocks to float when placed near them
 			{
 				for(int i = 1; i<=SGRandom::Int(0,3); i++)
 				{
@@ -238,18 +266,32 @@ namespace SG
 
 					if(SGRandom::Int(1,4) == 2)
 					{
-						PlaceBlock(SGBlockSet::GetRandomBlockNameWithTag("Structure"), cDir, i3SmallDeco, true);
+						PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Structure","Straight"}), cDir, i3SmallDeco, true);
+
+						/*
+						if(SGRandom::Int(1,3) == 1)
+						{
+							PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Structure","Straight"}), cDir, i3SmallDeco, true);
+						}
+						else
+						{
+							//cDir = SGDirection::TurnLeft(cDir);
+							PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"SideStructure"}), cDir, i3SmallDeco, true);
+						}
+						*/
+
 						cDir = SGDirection::TurnLeft(cDir); cDir = SGDirection::TurnLeft(cDir);
 						i3SmallDeco.y++;
-						PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Decoration","1x1"}), cDir, i3SmallDeco, true);
+						PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Decoration","Straight","1x1"}), cDir, i3SmallDeco, true);
 					}
 					else
 					{
 						cDir = SGDirection::TurnLeft(cDir);
-						PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Small4x1"}), cDir, i3SmallDeco);
+						PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Small4x1","Straight"}), cDir, i3SmallDeco);
 					}
 				}
 			}
+			//--
 		}		
 	}
 
@@ -269,11 +311,56 @@ namespace SG
 			sgprint("building arch at " + i3Point.x + " " + i3Point.z);
 			if (CanBuildStructureTower(i3Tower1, iArchHeight) && CanBuildStructureTower(i3Tower2, iArchHeight) && PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Arch"}), cDir, i3Point))
 			{
-				BuildStructureTower(i3Tower1, iArchHeight, true);
-				BuildStructureTower(i3Tower2, iArchHeight, true);
+				BuildStructureTower(i3Tower1, iArchHeight+SGRandom::Int(0,2), true);
+				BuildStructureTower(i3Tower2, iArchHeight+SGRandom::Int(0,2), true);
 
 				PlaceBlock(SGBlockSet::GetRandomBlockNameWithTags({"Decoration","1x1"}), SGRandom::Direction(), int3(i3Point.x, i3Point.y+2, i3Point.z));
 			}
+		}
+	}
+
+	void GenerateCurveTowerNearBlock(CGameCtnBlock@ cBlock)
+	{
+		sgprint("generating curve tower");
+
+		CGameEditorPluginMap::ECardinalDirections cDir = SGRandom::Direction();
+
+		array<int3> i3Tower(4);
+		i3Tower[0] = int3(cBlock.CoordX, cBlock.CoordY, cBlock.CoordZ).opAdd(SGDirection::Move(cDir, SGRandom::Int(3,6)));
+		i3Tower[1] = i3Tower[0].opAdd(SGDirection::Move(cDir, 1));
+		i3Tower[2] = i3Tower[0].opAdd(SGDirection::Move(SGDirection::TurnRight(cDir), 1));
+		i3Tower[3] = i3Tower[1].opAdd(SGDirection::Move(SGDirection::TurnRight(cDir), 1));
+
+		cDir = SGRandom::Direction();
+		int iTowerHeight = RandomTowerHeight(cBlock.CoordY);
+		if(SGRandom::Int(0,1) == 0)
+		{
+			iTowerHeight = RandomTowerHeight(iMapMinY + 5);
+		}
+
+		if (!CanBuildStructureTower(i3Tower[0], iMapMaxY) || !CanBuildStructureTower(i3Tower[1], iMapMaxY) ||
+			!CanBuildStructureTower(i3Tower[2], iMapMaxY) || !CanBuildStructureTower(i3Tower[3], iMapMaxY))
+		{
+			sgprint("cant generate curve tower here");
+			return;
+		}
+
+		string sSceneryBlockName = SGBlockSet::GetRandomBlockNameWithTags({"Decoration","Curve","1x1"});
+
+		//array<array<int>> tTowerChunks(4);
+		//tTowerChunks.InsertLast(SGBlocks::BlockChunk(i3Tower[0].x, i3Tower[0].z));
+		//tTowerChunks.InsertLast(SGBlocks::BlockChunk(i3Tower[1].x, i3Tower[1].z));
+		//tTowerChunks.InsertLast(SGBlocks::BlockChunk(i3Tower[2].x, i3Tower[2].z));
+		//tTowerChunks.InsertLast(SGBlocks::BlockChunk(i3Tower[3].x, i3Tower[3].z));
+
+		for(int i = 0; i < i3Tower.Length; i++)
+		{
+			int iHeight = iTowerHeight + SGRandom::Int(-3,1);
+			cDir = SGDirection::TurnLeft(cDir);
+
+			//SGBlocks::UnblockChunk(tTowerChunks[i]);
+			BuildStructureTower(i3Tower[i], iHeight, false);
+			PlaceBlock(sSceneryBlockName, cDir, int3(i3Tower[i].x, iHeight+1, i3Tower[i].z));
 		}
 	}
 }
